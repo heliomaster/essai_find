@@ -1,8 +1,11 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QStyledItemDelegate, QDateEdit
-from PyQt5.QtCore import pyqtSlot,QDate, QDateTime,Qt
-
+from PyQt5.QtWidgets import QMainWindow, QApplication, QStyledItemDelegate, QDateTimeEdit, QHeaderView,QTableView
+from PyQt5.QtCore import pyqtSlot, QDateTime, Qt, QAbstractItemModel,QModelIndex, QDateTime,QDate, QRegExp, QSortFilterProxyModel, Qt,QTime
+from datetime import datetime,timedelta
 
 import sys
+import sqlite3
+
+
 
 import essai_find
 from essai_find_db import *
@@ -12,17 +15,75 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
-
         self.DB = essaiFindDb()
-
         self.db_model = QSqlRelationalTableModel()
         self.db_model.setTable('Pilots_exp')
         self.db_model.setEditStrategy(QSqlRelationalTableModel.OnFieldChange)
-        self.db_model.setRelation(2,QSqlRelation('Aircraft','id','immatriculation'))
+        self.db_model.setRelation(2, QSqlRelation('Aircraft', 'immatriculation', 'immatriculation'))
         self.db_model.select()
         self.tableView.setModel(self.db_model)
+        self.tableView.setColumnHidden(0, True)
+        # self.tableView.resizeColumnsToContents()
+        # self.tableView.horizontalHeader().setStretchLastSection(True)
+        self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.custom_delegate = customDelegate()
-        self.tableView.setItemDelegateForColumn(3,self.custom_delegate)
+        self.tableView.setItemDelegateForColumn(3, self.custom_delegate)
+        self.tableView.setItemDelegateForColumn(4, self.custom_delegate)
+
+        self.label.setText('{} H {} M'.format(*self.hours_minutes()))
+
+        ############  PROXY MODEL ###############
+        self.proxyModel = MySortFilterProxyModel(self)
+        self.proxyModel.setDynamicSortFilter(True)
+
+        self.sourceView = QTableView()
+        self.sourceView.setAlternatingRowColors(True)
+
+
+
+
+
+
+    def update_combobox_pilots(self):
+        #Filling combox _avion
+        query_aircraft = QSqlQuery("SELECT immatriculation FROM Aircraft")
+        liste_ac = []
+        while query_aircraft.next():
+            aircraft = query_aircraft.value(0)
+            liste_ac.append(aircraft)
+        self.comboBox_avion.addItems(liste_ac)
+        self.comboBox_sel_ac.addItems(liste_ac)
+
+    def get_tot_hours(self):
+        """select dates from database """
+        query1 = QSqlQuery("SELECT date_time1,date_time2 FROM Pilots_exp")
+        liste = []
+        while query1.next():
+            date1 = query1.value(0)
+            date2 = query1.value(1)
+            essai = datetime.strptime(date2, "%Y/%m/%d %H:%M") - datetime.strptime(date1, "%Y/%m/%d %H:%M")
+            liste.append(essai)
+        total = sum(liste,timedelta())
+        return total
+
+    def hours_minutes(self):
+        """conversion of time delta get_tot_hours to hours"""
+        td = self.get_tot_hours()
+        resultat = td.days*24 + td.seconds//3600 , (td.seconds//60)%60
+        print('{} H {} M'.format(*resultat))
+        return resultat
+
+
+    def get_hours_diff(self):
+        query1 = QSqlQuery("SELECT date_time1,date_time2 FROM Pilots_exp")
+        result = []
+        while query1.next():
+            date1 = query1.value(0)
+            date2 = query1.value(1)
+            diff = datetime.strptime(date2, "%Y/%m/%d %H:%M") - datetime.strptime(date1, "%Y/%m/%d %H:%M")
+            result.append(str(diff))
+        return result
+
 
     @pyqtSlot()
     def on_pushButton_clicked(self):
@@ -32,6 +93,26 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         row = self.db_model.rowCount()
         self.db_model.insertRow(row)
 
+    def update_record(self):
+        print(self.get_hours_diff())
+        conn = sqlite3.connect("essai_find_database.db")
+        cur = conn.cursor()
+        for row in cur.execute("SELECT * FROM Pilots_exp"):
+            print(row)
+        rowids = [row[0] for row in cur.execute('SELECT rowid FROM Pilots_exp')]
+        cur.executemany('UPDATE Pilots_exp SET total=? WHERE id=?',zip(self.get_hours_diff(),rowids))
+        conn.commit()
+        self.db_model.select()
+        print(self.get_tot_hours())
+
+
+    @pyqtSlot()
+    def on_pushButton_update_clicked(self):
+        self.update_record()
+
+
+
+
 class customDelegate(QStyledItemDelegate):
     """DELEGATE INSERT CUSTOM DATEEDIT IN CELL """
 
@@ -39,21 +120,74 @@ class customDelegate(QStyledItemDelegate):
         super(customDelegate, self).__init__(parent)
 
     def createEditor(self, parent, option, index):
-        date_edit = QDateEdit(parent)
-        date_edit.setDisplayFormat("yyyy/MM/dd")
-        date_edit.setDate(QDate.currentDate())
+        date_edit = QDateTimeEdit(parent)
+        date_edit.setDisplayFormat("yyyy/MM/dd HH:mm")
+        date_edit.setDateTime(QDateTime.currentDateTime())
 
         date_edit.setCalendarPopup(True)
         return date_edit
 
     def setModelData(self, editor, model, index):
-        value = editor.date().toString("yyyy/MM/dd")
+        value = editor.dateTime().toString("yyyy/MM/dd HH:mm")
         model.setData(index, value)
 
     def setEditorData(self, editor, index):
         value = index.model().data(index, Qt.EditRole)
-        qdate = QDate().fromString(value, "yyyy/MM/dd")
-        editor.setDate(qdate)
+        qdate = QDateTime().fromString(value, "yyyy/MM/dd HH:mm")
+        editor.setDateTime(qdate)
+
+
+class MySortFilterProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super(MySortFilterProxyModel, self).__init__(parent)
+
+        self.minDate = QDate()
+        self.maxDate = QDate()
+
+    def setFilterMinimumDate(self, date):
+        self.minDate = date
+        self.invalidateFilter()
+
+    def filterMinimumDate(self):
+        return self.minDate
+
+    def setFilterMaximumDate(self, date):
+        self.maxDate = date
+        self.invalidateFilter()
+
+    def filterMaximumDate(self):
+        return self.maxDate
+
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
+        index1 = self.sourceModel().index(sourceRow, 1, sourceParent)
+        index2 = self.sourceModel().index(sourceRow, 2, sourceParent)
+
+        return ((self.filterRegExp().indexIn(self.sourceModel().data(index0)) >= 0
+                 or self.filterRegExp().indexIn(self.sourceModel().data(index1)) >= 0)
+                and self.dateInRange(self.sourceModel().data(index2)))
+
+    def lessThan(self, left, right):
+        leftData = self.sourceModel().data(left)
+        rightData = self.sourceModel().data(right)
+
+        if not isinstance(leftData, QDate):
+            emailPattern = QRegExp("([\\w\\.]*@[\\w\\.]*)")
+
+            if left.column() == 1 and emailPattern.indexIn(leftData) != -1:
+                leftData = emailPattern.cap(1)
+
+            if right.column() == 1 and emailPattern.indexIn(rightData) != -1:
+                rightData = emailPattern.cap(1)
+
+        return leftData < rightData
+
+    def dateInRange(self, date):
+        if isinstance(date, QDateTime):
+            date = date.date()
+
+        return ((not self.minDate.isValid() or date >= self.minDate)
+                and (not self.maxDate.isValid() or date <= self.maxDate))
 
 
 
