@@ -35,9 +35,12 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         ############  PROXY MODEL ###############
         self.proxyModel = MySortFilterProxyModel(self)
         self.proxyModel.setDynamicSortFilter(True)
+        self.proxyModel.setSourceModel(self.db_model)
 
-        self.sourceView = QTableView()
-        self.sourceView.setAlternatingRowColors(True)
+        self.proxyView = self.tableView
+        self.proxyView.setAlternatingRowColors(True)
+        self.proxyView.setModel(self.proxyModel)
+
 
 
 
