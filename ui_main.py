@@ -37,9 +37,24 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.proxyModel.setDynamicSortFilter(True)
         self.proxyModel.setSourceModel(self.db_model)
 
+        #geter from proxy
+        # self.proxyModel.setView(self.tableView)
+
         self.proxyView = self.tableView
         self.proxyView.setAlternatingRowColors(True)
         self.proxyView.setModel(self.proxyModel)
+
+
+
+        self.lineEdit_search.textChanged.connect(self.textFilterChanged)
+
+    def textFilterChanged(self):
+        # syntax = QRegExp.PatternSyntax(
+        #     self.filterSyntaxComboBox.itemData(
+        #         self.filterSyntaxComboBox.currentIndex()))
+        caseSensitivity = Qt.CaseInsensitive
+        regExp = QRegExp(self.lineEdit_search.text(),caseSensitivity)
+        self.proxyModel.setFilterRegExp(regExp)
 
 
 
@@ -147,6 +162,10 @@ class MySortFilterProxyModel(QSortFilterProxyModel):
         self.minDate = QDate()
         self.maxDate = QDate()
 
+    #setter for mainWindow
+    # def setView(self, view):
+    #     self._view = view
+
     def setFilterMinimumDate(self, date):
         self.minDate = date
         self.invalidateFilter()
@@ -162,9 +181,9 @@ class MySortFilterProxyModel(QSortFilterProxyModel):
         return self.maxDate
 
     def filterAcceptsRow(self, sourceRow, sourceParent):
-        index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
-        index1 = self.sourceModel().index(sourceRow, 1, sourceParent)
-        index2 = self.sourceModel().index(sourceRow, 2, sourceParent)
+        index0 = self.sourceModel().index(sourceRow, 1, sourceParent)
+        index1 = self.sourceModel().index(sourceRow, 2, sourceParent)
+        index2 = self.sourceModel().index(sourceRow, 3, sourceParent)
 
         return ((self.filterRegExp().indexIn(self.sourceModel().data(index0)) >= 0
                  or self.filterRegExp().indexIn(self.sourceModel().data(index1)) >= 0)
