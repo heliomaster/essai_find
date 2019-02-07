@@ -162,9 +162,9 @@ class MySortFilterProxyModel(QSortFilterProxyModel):
         return self.maxDate
 
     def filterAcceptsRow(self, sourceRow, sourceParent):
-        index0 = self.sourceModel().index(sourceRow, 0, sourceParent)
-        index1 = self.sourceModel().index(sourceRow, 1, sourceParent)
-        index2 = self.sourceModel().index(sourceRow, 2, sourceParent)
+        index0 = self.sourceModel().index(sourceRow, 1, sourceParent)
+        index1 = self.sourceModel().index(sourceRow, 2, sourceParent)
+        index2 = self.sourceModel().index(sourceRow, 3, sourceParent)
 
         return ((self.filterRegExp().indexIn(self.sourceModel().data(index0)) >= 0
                  or self.filterRegExp().indexIn(self.sourceModel().data(index1)) >= 0)
