@@ -31,9 +31,6 @@
     <item row="1" column="0" colspan="5">
      <widget class="QTableView" name="tableView"/>
     </item>
-    <item row="0" column="0">
-     <widget class="QComboBox" name="comboBox_pilot"/>
-    </item>
     <item row="2" column="4">
      <widget class="QLabel" name="label">
       <property name="styleSheet">
@@ -60,6 +57,9 @@ border-top-color: rgb(252, 2, 128);</string>
        <string>UPDATE</string>
       </property>
      </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QLineEdit" name="lineEdit_search"/>
     </item>
    </layout>
   </widget>

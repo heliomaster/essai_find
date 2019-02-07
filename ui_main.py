@@ -37,10 +37,30 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.proxyModel.setDynamicSortFilter(True)
         self.proxyModel.setSourceModel(self.db_model)
 
+        #geter from proxy
+        # self.proxyModel.setView(self.tableView)
+
         self.proxyView = self.tableView
         self.proxyView.setAlternatingRowColors(True)
         self.proxyView.setModel(self.proxyModel)
 
+        self.lineEdit_search.textChanged.connect(self.textFilterChanged)
+
+        # self.filtered_row_count = self.proxyModel.rowCount()
+
+
+    def textFilterChanged(self):
+        # syntax = QRegExp.PatternSyntax(
+        #     self.filterSyntaxComboBox.itemData(
+        #         self.filterSyntaxComboBox.currentIndex()))
+        caseSensitivity = Qt.CaseInsensitive
+        regExp = QRegExp(self.lineEdit_search.text(),caseSensitivity)
+        self.proxyModel.setFilterRegExp(regExp)
+
+#########   FILTER ROW  ##########
+    def get_filtered_rows(self):
+        print("rows in fitered view is {} ".format(self.proxyModel.rowCount()))
+        print("rows in original model is {}".format(self.db_model.rowCount()))
 
 
 
@@ -112,6 +132,8 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
     @pyqtSlot()
     def on_pushButton_update_clicked(self):
         self.update_record()
+        ###### ESSAI ROW COUNT
+        self.get_filtered_rows()
 
 
 
@@ -147,6 +169,10 @@ class MySortFilterProxyModel(QSortFilterProxyModel):
         self.minDate = QDate()
         self.maxDate = QDate()
 
+    #setter for mainWindow
+    # def setView(self, view):
+    #     self._view = view
+
     def setFilterMinimumDate(self, date):
         self.minDate = date
         self.invalidateFilter()
@@ -170,20 +196,20 @@ class MySortFilterProxyModel(QSortFilterProxyModel):
                  or self.filterRegExp().indexIn(self.sourceModel().data(index1)) >= 0)
                 and self.dateInRange(self.sourceModel().data(index2)))
 
-    def lessThan(self, left, right):
-        leftData = self.sourceModel().data(left)
-        rightData = self.sourceModel().data(right)
-
-        if not isinstance(leftData, QDate):
-            emailPattern = QRegExp("([\\w\\.]*@[\\w\\.]*)")
-
-            if left.column() == 1 and emailPattern.indexIn(leftData) != -1:
-                leftData = emailPattern.cap(1)
-
-            if right.column() == 1 and emailPattern.indexIn(rightData) != -1:
-                rightData = emailPattern.cap(1)
-
-        return leftData < rightData
+    # def lessThan(self, left, right):
+    #     leftData = self.sourceModel().data(left)
+    #     rightData = self.sourceModel().data(right)
+    #
+    #     if not isinstance(leftData, QDate):
+    #         emailPattern = QRegExp("([\\w\\.]*@[\\w\\.]*)")
+    #
+    #         if left.column() == 1 and emailPattern.indexIn(leftData) != -1:
+    #             leftData = emailPattern.cap(1)
+    #
+    #         if right.column() == 1 and emailPattern.indexIn(rightData) != -1:
+    #             rightData = emailPattern.cap(1)
+    #
+    #     return leftData < rightData
 
     def dateInRange(self, date):
         if isinstance(date, QDateTime):
