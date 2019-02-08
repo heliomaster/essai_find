@@ -5,8 +5,6 @@ from datetime import datetime,timedelta
 import sys
 import sqlite3
 
-
-
 import essai_find
 from essai_find_db import *
 
@@ -61,9 +59,6 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
     def get_filtered_rows(self):
         print("rows in fitered view is {} ".format(self.proxyModel.rowCount()))
         print("rows in original model is {}".format(self.db_model.rowCount()))
-
-
-
 
 
 
