@@ -21,7 +21,7 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.db_model.setEditStrategy(QSqlRelationalTableModel.OnFieldChange)
         self.db_model.setRelation(2, QSqlRelation('Aircraft', 'immatriculation', 'immatriculation'))
         self.db_model.select()
-        self.tableView.setModel(self.db_model)
+        # self.tableView.setModel(self.db_model)
         self.tableView.setColumnHidden(0, True)
         # self.tableView.resizeColumnsToContents()
         # self.tableView.horizontalHeader().setStretchLastSection(True)
@@ -37,12 +37,13 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.proxyModel.setDynamicSortFilter(True)
         self.proxyModel.setSourceModel(self.db_model)
 
-        #geter from proxy
-        # self.proxyModel.setView(self.tableView)
 
-        self.proxyView = self.tableView
-        self.proxyView.setAlternatingRowColors(True)
-        self.proxyView.setModel(self.proxyModel)
+        #
+        # self.proxyView = self.tableView
+        # self.proxyView.setAlternatingRowColors(True)
+        # self.proxyView.setModel(self.proxyModel)
+        self.tableView.setModel(self.proxyModel)
+        self.tableView.setAlternatingRowColors(True)
 
         self.lineEdit_search.textChanged.connect(self.textFilterChanged)
 
@@ -61,6 +62,20 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
     def get_filtered_rows(self):
         print("rows in fitered view is {} ".format(self.proxyModel.rowCount()))
         print("rows in original model is {}".format(self.db_model.rowCount()))
+
+
+    def filterAcceptsRow(self):
+        row = self.proxyModel.rowCount()
+        data = []
+        for row in range(self.proxyModel.rowCount()):
+            data.append([])
+            for column in range(self.proxyModel.columnCount()):
+                index = self.proxyModel.index(row, column)
+                # We suppose data are strings
+                data[row].append(str(self.proxyModel.data(index)))
+        print(data)
+        return data
+
 
 
 
@@ -133,7 +148,8 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
     def on_pushButton_update_clicked(self):
         self.update_record()
         ###### ESSAI ROW COUNT
-        self.get_filtered_rows()
+        # self.get_filtered_rows()
+        self.filterAcceptsRow()
 
 
 
