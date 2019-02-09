@@ -79,11 +79,6 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         return data2
 
 
-
-
-
-
-
     def update_combobox_pilots(self):
         #Filling combox _avion
         query_aircraft = QSqlQuery("SELECT immatriculation FROM Aircraft")
