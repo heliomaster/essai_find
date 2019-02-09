@@ -64,17 +64,19 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         print("rows in original model is {}".format(self.db_model.rowCount()))
 
 
-    def filterAcceptsRow(self):
-        row = self.proxyModel.rowCount()
+    def last_col_filtered(self):
+        """Gets all the data from the filtered model and returns last column i.e total hours """
         data = []
         for row in range(self.proxyModel.rowCount()):
             data.append([])
             for column in range(self.proxyModel.columnCount()):
                 index = self.proxyModel.index(row, column)
-                # We suppose data are strings
                 data[row].append(str(self.proxyModel.data(index)))
+            data2 = [col[5] for col in data]
         print(data)
-        return data
+        print(data2)
+
+        return data2
 
 
 
@@ -149,7 +151,7 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.update_record()
         ###### ESSAI ROW COUNT
         # self.get_filtered_rows()
-        self.filterAcceptsRow()
+        self.last_col_filtered()
 
 
 
