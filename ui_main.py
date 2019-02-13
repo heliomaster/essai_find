@@ -31,7 +31,10 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.tableView.setItemDelegateForColumn(3, self.custom_delegate)
         self.tableView.setItemDelegateForColumn(4, self.custom_delegate)
 
-        self.label.setText('{} H {} M'.format(*self.hours_minutes()))
+        # self.label.setText('{} H {} M'.format(*self.hours_minutes()))
+        # self.label.setText(str(self.last_col_filtered))
+        # self.label.setText('{} H {} M'.format(*self.proxy_hours_minutes()))
+
 
         ############  PROXY MODEL ###############
         self.proxyModel = MySortFilterProxyModel(self)
@@ -85,8 +88,15 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
                  dt = timedelta(hours=i.hour, minutes=i.minute, seconds=i.second)
                  liste1.append(dt)
              return (sum(liste1,timedelta()))
-             print(date)
-             print(liste1)
+
+    def proxy_hours_minutes(self):
+        """conversion of time delta get_tot_hours to hours"""
+        td = self.convert_last_col_filtered()
+        resultat = td.days*24 + td.seconds//3600 , (td.seconds//60)%60
+        print('{} H {} M'.format(*resultat))
+        return resultat
+
+
 
 
 
@@ -116,6 +126,7 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
     def hours_minutes(self):
         """conversion of time delta get_tot_hours to hours"""
         td = self.get_tot_hours()
+        # td = self.convert_last_col_filtered()
         resultat = td.days*24 + td.seconds//3600 , (td.seconds//60)%60
         print('{} H {} M'.format(*resultat))
         return resultat
@@ -158,9 +169,10 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.update_record()
         ###### ESSAI ROW COUNT
         # self.get_filtered_rows()
-        self.last_col_filtered()
-        self.convert_last_col_filtered()
-
+        # self.last_col_filtered()
+        # self.convert_last_col_filtered()
+        # self.proxy_hours_minutes()
+        self.label.setText('{} H {} M'.format(*self.proxy_hours_minutes()))
 
 
 
