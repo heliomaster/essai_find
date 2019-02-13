@@ -1,9 +1,10 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QStyledItemDelegate, QDateTimeEdit, QHeaderView,QTableView
 from PyQt5.QtCore import pyqtSlot, QDateTime, Qt, QAbstractItemModel,QModelIndex, QDateTime,QDate, QRegExp, QSortFilterProxyModel, Qt,QTime
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,time
 
 import sys
 import sqlite3
+
 
 
 
@@ -37,8 +38,6 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.proxyModel.setDynamicSortFilter(True)
         self.proxyModel.setSourceModel(self.db_model)
 
-
-        #
         # self.proxyView = self.tableView
         # self.proxyView.setAlternatingRowColors(True)
         # self.proxyView.setModel(self.proxyModel)
@@ -64,6 +63,7 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         print("rows in original model is {}".format(self.db_model.rowCount()))
 
 
+
     def last_col_filtered(self):
         """Gets all the data from the filtered model and returns last column i.e total hours """
         data = []
@@ -73,10 +73,21 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
                 index = self.proxyModel.index(row, column)
                 data[row].append(str(self.proxyModel.data(index)))
             data2 = [col[5] for col in data]
-        print(data)
+        # print(data)
         print(data2)
-
         return data2
+
+    def convert_last_col_filtered(self):
+        # pass
+             date =[datetime.strptime(x,"%H:%M:%S") for x in self.last_col_filtered() ]
+             liste1 = []
+             for i in date:
+                 dt = timedelta(hours=i.hour, minutes=i.minute, seconds=i.second)
+                 liste1.append(dt)
+             return (sum(liste1,timedelta()))
+             print(date)
+             print(liste1)
+
 
 
     def update_combobox_pilots(self):
@@ -86,8 +97,9 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         while query_aircraft.next():
             aircraft = query_aircraft.value(0)
             liste_ac.append(aircraft)
-        self.comboBox_avion.addItems(liste_ac)
-        self.comboBox_sel_ac.addItems(liste_ac)
+        # self.comboBox_avion.addItems(liste_ac)
+        # self.comboBox_sel_ac.addItems(liste_ac)
+        return liste_ac
 
     def get_tot_hours(self):
         """select dates from database """
@@ -129,16 +141,16 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.db_model.insertRow(row)
 
     def update_record(self):
-        print(self.get_hours_diff())
+        """UPDATES EACH SQL ROW WITH TIME DELTA FROM PREVIOUS 2 COLUMNS"""
+        # print(self.get_hours_diff())
         conn = sqlite3.connect("essai_find_database.db")
         cur = conn.cursor()
-        for row in cur.execute("SELECT * FROM Pilots_exp"):
-            print(row)
+        cur.execute("SELECT * FROM Pilots_exp")
         rowids = [row[0] for row in cur.execute('SELECT rowid FROM Pilots_exp')]
         cur.executemany('UPDATE Pilots_exp SET total=? WHERE id=?',zip(self.get_hours_diff(),rowids))
         conn.commit()
         self.db_model.select()
-        print(self.get_tot_hours())
+        # print(self.get_tot_hours())
 
 
     @pyqtSlot()
@@ -147,6 +159,8 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         ###### ESSAI ROW COUNT
         # self.get_filtered_rows()
         self.last_col_filtered()
+        self.convert_last_col_filtered()
+
 
 
 
