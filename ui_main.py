@@ -1,15 +1,12 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QStyledItemDelegate, QDateTimeEdit, QHeaderView,QTableView
-from PyQt5.QtCore import pyqtSlot, QDateTime, Qt, QAbstractItemModel,QModelIndex, QDateTime,QDate, QRegExp, QSortFilterProxyModel, Qt,QTime
+from PyQt5.QtCore import pyqtSlot, Qt, QAbstractItemModel,QModelIndex, QDateTime,QDate, QRegExp, QSortFilterProxyModel, Qt,QTime
 from datetime import datetime,timedelta,time
 
 import sys
 import sqlite3
-
-
-
-
 import essai_find
 from essai_find_db import *
+
 
 
 class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
@@ -31,6 +28,13 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.tableView.setItemDelegateForColumn(3, self.custom_delegate)
         self.tableView.setItemDelegateForColumn(4, self.custom_delegate)
 
+        self.dateEdit.setCalendarPopup(True)
+        self.dateEdit_2.setCalendarPopup(True)
+        self.dateEdit.setDate(QDate.currentDate())
+        self.dateEdit_2.setDate(QDate.currentDate())
+
+
+
         # self.label.setText('{} H {} M'.format(*self.hours_minutes()))
         # self.label.setText(str(self.last_col_filtered))
         # self.label.setText('{} H {} M'.format(*self.proxy_hours_minutes()))
@@ -46,11 +50,24 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         # self.proxyView.setModel(self.proxyModel)
         self.tableView.setModel(self.proxyModel)
         self.tableView.setAlternatingRowColors(True)
+        self.tableView.setSortingEnabled(True)
 
         self.lineEdit_search.textChanged.connect(self.textFilterChanged)
+        self.dateEdit.dateChanged.connect(self.dateFilterChanged)
+        self.dateEdit_2.dateChanged.connect(self.dateFilterChanged)
+
+
 
         # self.filtered_row_count = self.proxyModel.rowCount()
+        # self.textFilterChanged()
+        # self.dateFilterChanged()
 
+
+    def dateFilterChanged(self):
+        self.proxyModel.setFilterMinimumDate(self.dateEdit.date())
+        self.proxyModel.setFilterMaximumDate(self.dateEdit_2.date())
+        print(self.dateEdit.date())
+        print(self.dateEdit_2.date())
 
     def textFilterChanged(self):
         # syntax = QRegExp.PatternSyntax(
@@ -64,8 +81,6 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
     def get_filtered_rows(self):
         print("rows in fitered view is {} ".format(self.proxyModel.rowCount()))
         print("rows in original model is {}".format(self.db_model.rowCount()))
-
-
 
     def last_col_filtered(self):
         """Gets all the data from the filtered model and returns last column i.e total hours """
@@ -81,8 +96,7 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         return data2
 
     def convert_last_col_filtered(self):
-        # pass
-             date =[datetime.strptime(x,"%H:%M:%S") for x in self.last_col_filtered() ]
+             date =[datetime.strptime(x,"%H:%M:%S") for x in self.last_col_filtered()]
              liste1 = []
              for i in date:
                  dt = timedelta(hours=i.hour, minutes=i.minute, seconds=i.second)
@@ -95,10 +109,6 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         resultat = td.days*24 + td.seconds//3600 , (td.seconds//60)%60
         print('{} H {} M'.format(*resultat))
         return resultat
-
-
-
-
 
     def update_combobox_pilots(self):
         #Filling combox _avion
@@ -149,7 +159,9 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
 
     def add_record(self):
         row = self.db_model.rowCount()
-        self.db_model.insertRow(row)
+        print(row)
+        # self.db_model.insertRow(row)
+
 
     def update_record(self):
         """UPDATES EACH SQL ROW WITH TIME DELTA FROM PREVIOUS 2 COLUMNS"""
@@ -167,12 +179,8 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
     @pyqtSlot()
     def on_pushButton_update_clicked(self):
         self.update_record()
-        ###### ESSAI ROW COUNT
-        # self.get_filtered_rows()
-        # self.last_col_filtered()
-        # self.convert_last_col_filtered()
-        # self.proxy_hours_minutes()
         self.label.setText('{} H {} M'.format(*self.proxy_hours_minutes()))
+
 
 
 
@@ -208,9 +216,6 @@ class MySortFilterProxyModel(QSortFilterProxyModel):
         self.minDate = QDate()
         self.maxDate = QDate()
 
-    #setter for mainWindow
-    # def setView(self, view):
-    #     self._view = view
 
     def setFilterMinimumDate(self, date):
         self.minDate = date
@@ -230,10 +235,16 @@ class MySortFilterProxyModel(QSortFilterProxyModel):
         index0 = self.sourceModel().index(sourceRow, 1, sourceParent)
         index1 = self.sourceModel().index(sourceRow, 2, sourceParent)
         index2 = self.sourceModel().index(sourceRow, 3, sourceParent)
+        # print(QDate().fromString(self.sourceModel().data(index2),"yyyy/MM/dd HH:mm"))
+        # print(self.dateInRange(QDate().fromString((self.sourceModel().data(index2)))))
+        # print( datetime.strptime(self.sourceModel().data(index2), "%Y/%m/%d %H:%M"))
 
         return ((self.filterRegExp().indexIn(self.sourceModel().data(index0)) >= 0
                  or self.filterRegExp().indexIn(self.sourceModel().data(index1)) >= 0)
-                and self.dateInRange(self.sourceModel().data(index2)))
+                and self.dateInRange(datetime.strptime(self.sourceModel().data(index2),"%Y/%m/%d %H:%M")))
+
+                # self.dateInRange(self.sourceModel().data(index2)))
+
 
     # def lessThan(self, left, right):
     #     leftData = self.sourceModel().data(left)
