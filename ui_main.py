@@ -160,7 +160,7 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
     def add_record(self):
         row = self.db_model.rowCount()
         print(row)
-        # self.db_model.insertRow(row)
+        self.db_model.insertRow(row)
 
 
     def update_record(self):
@@ -241,7 +241,8 @@ class MySortFilterProxyModel(QSortFilterProxyModel):
 
         return ((self.filterRegExp().indexIn(self.sourceModel().data(index0)) >= 0
                  or self.filterRegExp().indexIn(self.sourceModel().data(index1)) >= 0)
-                and self.dateInRange(datetime.strptime(self.sourceModel().data(index2),"%Y/%m/%d %H:%M")))
+                and self.dateInRange(self.sourceModel().data(index2)))
+                # self.dateInRange(datetime.strptime(self.sourceModel().data(index2),"%Y/%m/%d %H:%M")))
 
                 # self.dateInRange(self.sourceModel().data(index2)))
 
