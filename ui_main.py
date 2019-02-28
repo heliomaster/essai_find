@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QMainWindow, QApplication, QStyledItemDelegate, QDateTimeEdit, QHeaderView,QTableView
-from PyQt5.QtCore import pyqtSlot, Qt, QAbstractItemModel,QModelIndex, QDateTime,QDate, QRegExp, QSortFilterProxyModel, Qt,QTime
+from PyQt5.QtCore import pyqtSlot, Qt, QAbstractItemModel,QModelIndex, QDateTime,QDate, QRegExp, QSortFilterProxyModel, Qt,QTime,QIdentityProxyModel
 from datetime import datetime,timedelta,time
 
 import sys
@@ -35,26 +35,51 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
 
 
 
-        # self.label.setText('{} H {} M'.format(*self.hours_minutes()))
+
+        self.label.setText('{} H {} M'.format(*self.hours_minutes()))
         # self.label.setText(str(self.last_col_filtered))
         # self.label.setText('{} H {} M'.format(*self.proxy_hours_minutes()))
 
 
+##################  ELLYA PROXY ######################################
+
+        proxy_convert_to_date = ConvertToDateProxyModel(self)
+        proxy_convert_to_date.setSourceModel(self.db_model)
+        proxy_convert_to_date.set_columns([3, 4])
+        proxy_convert_to_date.set_format("yyyy/MM/dd hh:mm")
+
+
+        self._proxy_date = FilterDateProxyModel(self)
+        self._proxy_date.setFilterKeyColumn(3)
+        self._proxy_date.setSourceModel(proxy_convert_to_date)
+
+        self._proxy_filter = FilterTextProxyModel(self)
+        self._proxy_filter.setSourceModel(self._proxy_date)
+        self._proxy_filter.set_columns([1, 2])
+
+        self.tableView.setModel(self._proxy_filter)
+        self.tableView.verticalHeader().hide()
+        # self.tableView.sortByColumn(1,Qt.AscendingOrder)
+
+################### END ELLYA PROXY ##################################
+
+
+
         ############  PROXY MODEL ###############
-        self.proxyModel = MySortFilterProxyModel(self)
-        self.proxyModel.setDynamicSortFilter(True)
-        self.proxyModel.setSourceModel(self.db_model)
+        # self.proxyModel = MySortFilterProxyModel(self)
+        # self.proxyModel.setDynamicSortFilter(True)
+        # self.proxyModel.setSourceModel(self.db_model)
 
         # self.proxyView = self.tableView
         # self.proxyView.setAlternatingRowColors(True)
         # self.proxyView.setModel(self.proxyModel)
-        self.tableView.setModel(self.proxyModel)
-        self.tableView.setAlternatingRowColors(True)
-        self.tableView.setSortingEnabled(True)
-
-        self.lineEdit_search.textChanged.connect(self.textFilterChanged)
-        self.dateEdit.dateChanged.connect(self.dateFilterChanged)
-        self.dateEdit_2.dateChanged.connect(self.dateFilterChanged)
+        # self.tableView.setModel(self.proxyModel)
+        # self.tableView.setAlternatingRowColors(True)
+        # self.tableView.setSortingEnabled(True)
+        #
+        # self.lineEdit_search.textChanged.connect(self.textFilterChanged)
+        # self.dateEdit.dateChanged.connect(self.dateFilterChanged)
+        # self.dateEdit_2.dateChanged.connect(self.dateFilterChanged)
 
 
 
@@ -63,19 +88,19 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         # self.dateFilterChanged()
 
 
-    def dateFilterChanged(self):
-        self.proxyModel.setFilterMinimumDate(self.dateEdit.date())
-        self.proxyModel.setFilterMaximumDate(self.dateEdit_2.date())
-        print(self.dateEdit.date())
-        print(self.dateEdit_2.date())
-
-    def textFilterChanged(self):
-        # syntax = QRegExp.PatternSyntax(
-        #     self.filterSyntaxComboBox.itemData(
-        #         self.filterSyntaxComboBox.currentIndex()))
-        caseSensitivity = Qt.CaseInsensitive
-        regExp = QRegExp(self.lineEdit_search.text(),caseSensitivity)
-        self.proxyModel.setFilterRegExp(regExp)
+    # def dateFilterChanged(self):
+    #     self.proxyModel.setFilterMinimumDate(self.dateEdit.date())
+    #     self.proxyModel.setFilterMaximumDate(self.dateEdit_2.date())
+    #     print(self.dateEdit.date())
+    #     print(self.dateEdit_2.date())
+    #
+    # def textFilterChanged(self):
+    #     # syntax = QRegExp.PatternSyntax(
+    #     #     self.filterSyntaxComboBox.itemData(
+    #     #         self.filterSyntaxComboBox.currentIndex()))
+    #     caseSensitivity = Qt.CaseInsensitive
+    #     regExp = QRegExp(self.lineEdit_search.text(),caseSensitivity)
+    #     self.proxyModel.setFilterRegExp(regExp)
 
 #########   FILTER ROW  ##########
     def get_filtered_rows(self):
@@ -181,6 +206,68 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.update_record()
         self.label.setText('{} H {} M'.format(*self.proxy_hours_minutes()))
 
+class ConvertToDateProxyModel(QIdentityProxyModel):
+    def __init__(self, parent=None):
+        super(ConvertToDateProxyModel, self).__init__(parent)
+        self._columns = []
+        self._fmt = ""
+
+    def set_format(self, fmt):
+        self._fmt = fmt
+
+    def set_columns(self, columns):
+        self._columns = columns
+
+    def data(self, index, role=Qt.DisplayRole):
+        v = super(ConvertToDateProxyModel, self).data(index, role)
+        if not index.isValid():
+            return
+        if index.column() in self._columns and self._fmt:
+            return QDateTime.fromString(v, self._fmt)
+        return v
+
+    def setData(self, index, value, role=Qt.EditRole):
+        if index.column() in self._columns and self._fmt:
+            sm = self.sourceModel()
+            ix = self.mapToSource(index)
+            return sm.setData(ix, value.toString(self._fmt), role)
+        return super(ConvertToDateProxyModel, self).setData(index, value, role)
+
+class FilterDateProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super(FilterDateProxyModel, self).__init__(parent)
+        self._from_date, self._to_date = QDate(), QDate()
+
+    def setRange(self, from_date, to_date):
+        self._from_date = from_date
+        self._to_date = to_date
+        self.invalidateFilter()
+
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        if any([not date.isValid() for date in (self._from_date, self._to_date,)]):
+            return True
+        ix = self.sourceModel().index(sourceRow, self.filterKeyColumn(), sourceParent)
+        dt = ix.data().date()
+        return self._from_date <= dt <= self._to_date
+
+class FilterTextProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super(FilterTextProxyModel, self).__init__(parent)
+        self._columns = []
+
+    def set_columns(self, columns):
+        self._columns = columns
+        self.invalidateFilter()
+
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        if not self._columns:
+            return True
+        values = []
+        for c in range(self.sourceModel().columnCount()):
+            if c in self._columns:
+                ix = self.sourceModel().index(sourceRow, c, sourceParent)
+                values.append(self.filterRegExp().indexIn(ix.data()) >= 0)
+        return any(values)
 
 
 
@@ -209,65 +296,65 @@ class customDelegate(QStyledItemDelegate):
         editor.setDateTime(qdate)
 
 
-class MySortFilterProxyModel(QSortFilterProxyModel):
-    def __init__(self, parent=None):
-        super(MySortFilterProxyModel, self).__init__(parent)
-
-        self.minDate = QDate()
-        self.maxDate = QDate()
-
-
-    def setFilterMinimumDate(self, date):
-        self.minDate = date
-        self.invalidateFilter()
-
-    def filterMinimumDate(self):
-        return self.minDate
-
-    def setFilterMaximumDate(self, date):
-        self.maxDate = date
-        self.invalidateFilter()
-
-    def filterMaximumDate(self):
-        return self.maxDate
-
-    def filterAcceptsRow(self, sourceRow, sourceParent):
-        index0 = self.sourceModel().index(sourceRow, 1, sourceParent)
-        index1 = self.sourceModel().index(sourceRow, 2, sourceParent)
-        index2 = self.sourceModel().index(sourceRow, 3, sourceParent)
-        # print(QDate().fromString(self.sourceModel().data(index2),"yyyy/MM/dd HH:mm"))
-        # print(self.dateInRange(QDate().fromString((self.sourceModel().data(index2)))))
-        # print( datetime.strptime(self.sourceModel().data(index2), "%Y/%m/%d %H:%M"))
-
-        return ((self.filterRegExp().indexIn(self.sourceModel().data(index0)) >= 0
-                 or self.filterRegExp().indexIn(self.sourceModel().data(index1)) >= 0)
-                and self.dateInRange(self.sourceModel().data(index2)))
-                # self.dateInRange(datetime.strptime(self.sourceModel().data(index2),"%Y/%m/%d %H:%M")))
-
-                # self.dateInRange(self.sourceModel().data(index2)))
-
-
-    # def lessThan(self, left, right):
-    #     leftData = self.sourceModel().data(left)
-    #     rightData = self.sourceModel().data(right)
-    #
-    #     if not isinstance(leftData, QDate):
-    #         emailPattern = QRegExp("([\\w\\.]*@[\\w\\.]*)")
-    #
-    #         if left.column() == 1 and emailPattern.indexIn(leftData) != -1:
-    #             leftData = emailPattern.cap(1)
-    #
-    #         if right.column() == 1 and emailPattern.indexIn(rightData) != -1:
-    #             rightData = emailPattern.cap(1)
-    #
-    #     return leftData < rightData
-
-    def dateInRange(self, date):
-        if isinstance(date, QDateTime):
-            date = date.date()
-
-        return ((not self.minDate.isValid() or date >= self.minDate)
-                and (not self.maxDate.isValid() or date <= self.maxDate))
+# class MySortFilterProxyModel(QSortFilterProxyModel):
+#     def __init__(self, parent=None):
+#         super(MySortFilterProxyModel, self).__init__(parent)
+#
+#         self.minDate = QDate()
+#         self.maxDate = QDate()
+#
+#
+#     def setFilterMinimumDate(self, date):
+#         self.minDate = date
+#         self.invalidateFilter()
+#
+#     def filterMinimumDate(self):
+#         return self.minDate
+#
+#     def setFilterMaximumDate(self, date):
+#         self.maxDate = date
+#         self.invalidateFilter()
+#
+#     def filterMaximumDate(self):
+#         return self.maxDate
+#
+#     def filterAcceptsRow(self, sourceRow, sourceParent):
+#         index0 = self.sourceModel().index(sourceRow, 1, sourceParent)
+#         index1 = self.sourceModel().index(sourceRow, 2, sourceParent)
+#         index2 = self.sourceModel().index(sourceRow, 3, sourceParent)
+#         # print(QDate().fromString(self.sourceModel().data(index2),"yyyy/MM/dd HH:mm"))
+#         # print(self.dateInRange(QDate().fromString((self.sourceModel().data(index2)))))
+#         # print( datetime.strptime(self.sourceModel().data(index2), "%Y/%m/%d %H:%M"))
+#
+#         return ((self.filterRegExp().indexIn(self.sourceModel().data(index0)) >= 0
+#                  or self.filterRegExp().indexIn(self.sourceModel().data(index1)) >= 0)
+#                 and self.dateInRange(self.sourceModel().data(index2)))
+#                 # self.dateInRange(datetime.strptime(self.sourceModel().data(index2),"%Y/%m/%d %H:%M")))
+#
+#                 # self.dateInRange(self.sourceModel().data(index2)))
+#
+#
+#     # def lessThan(self, left, right):
+#     #     leftData = self.sourceModel().data(left)
+#     #     rightData = self.sourceModel().data(right)
+#     #
+#     #     if not isinstance(leftData, QDate):
+#     #         emailPattern = QRegExp("([\\w\\.]*@[\\w\\.]*)")
+#     #
+#     #         if left.column() == 1 and emailPattern.indexIn(leftData) != -1:
+#     #             leftData = emailPattern.cap(1)
+#     #
+#     #         if right.column() == 1 and emailPattern.indexIn(rightData) != -1:
+#     #             rightData = emailPattern.cap(1)
+#     #
+#     #     return leftData < rightData
+#
+#     def dateInRange(self, date):
+#         if isinstance(date, QDateTime):
+#             date = date.date()
+#
+#         return ((not self.minDate.isValid() or date >= self.minDate)
+#                 and (not self.maxDate.isValid() or date <= self.maxDate))
 
 
 
