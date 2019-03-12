@@ -244,23 +244,9 @@ class MySortFilterProxyModel(QSortFilterProxyModel):
                 and self.dateInRange(self.sourceModel().data(index2)))
                 # self.dateInRange(datetime.strptime(self.sourceModel().data(index2),"%Y/%m/%d %H:%M")))
 
-                # self.dateInRange(self.sourceModel().data(index2)))
+                # self.dateInRange(self.sourceModel().data(QDate.fromString(str(index2)),"yyyy/MM/dd")))
 
 
-    # def lessThan(self, left, right):
-    #     leftData = self.sourceModel().data(left)
-    #     rightData = self.sourceModel().data(right)
-    #
-    #     if not isinstance(leftData, QDate):
-    #         emailPattern = QRegExp("([\\w\\.]*@[\\w\\.]*)")
-    #
-    #         if left.column() == 1 and emailPattern.indexIn(leftData) != -1:
-    #             leftData = emailPattern.cap(1)
-    #
-    #         if right.column() == 1 and emailPattern.indexIn(rightData) != -1:
-    #             rightData = emailPattern.cap(1)
-    #
-    #     return leftData < rightData
 
     def dateInRange(self, date):
         if isinstance(date, QDateTime):
