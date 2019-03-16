@@ -1,12 +1,12 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QStyledItemDelegate, QDateTimeEdit, QHeaderView,QTableView
-from PyQt5.QtCore import pyqtSlot, Qt, QAbstractItemModel,QModelIndex, QDateTime,QDate, QRegExp, QSortFilterProxyModel, Qt,QTime
-from datetime import datetime,timedelta,time
-
-import sys
 import sqlite3
+import sys
+from datetime import datetime, timedelta
+
+from PyQt5.QtCore import pyqtSlot, QDateTime, QDate, QRegExp, QSortFilterProxyModel, Qt
+from PyQt5.QtWidgets import QMainWindow, QApplication, QStyledItemDelegate, QDateTimeEdit, QHeaderView
+
 import essai_find
 from essai_find_db import *
-
 
 
 class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
@@ -56,18 +56,17 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
         self.dateEdit.dateChanged.connect(self.dateFilterChanged)
         self.dateEdit_2.dateChanged.connect(self.dateFilterChanged)
 
-
-
-        # self.filtered_row_count = self.proxyModel.rowCount()
-        # self.textFilterChanged()
-        # self.dateFilterChanged()
+    # def filter_date(self):
+    #     combo_date = self.dateEdit.text()
+    #     combo_date2 = self.dateEdit.text()
+    #     filter = "cast(datetime1 as datetime)between cast('{}' as datetime) and cast('{}' as datetime)".format(
+    #         combo_date, combo_date2)
 
 
     def dateFilterChanged(self):
         self.proxyModel.setFilterMinimumDate(self.dateEdit.date())
         self.proxyModel.setFilterMaximumDate(self.dateEdit_2.date())
-        print(self.dateEdit.date())
-        print(self.dateEdit_2.date())
+
 
     def textFilterChanged(self):
         # syntax = QRegExp.PatternSyntax(
@@ -151,7 +150,6 @@ class MainWindow(QMainWindow, essai_find.Ui_MainWindow):
             diff = datetime.strptime(date2, "%Y/%m/%d %H:%M") - datetime.strptime(date1, "%Y/%m/%d %H:%M")
             result.append(str(diff))
         return result
-
 
     @pyqtSlot()
     def on_pushButton_clicked(self):
@@ -246,11 +244,19 @@ class MySortFilterProxyModel(QSortFilterProxyModel):
 
                 # self.dateInRange(self.sourceModel().data(QDate.fromString(str(index2)),"yyyy/MM/dd")))
 
-
-
     def dateInRange(self, date):
-        if isinstance(date, QDateTime):
-            date = date.date()
+        # if isinstance(date,str):
+        #
+        #     date = datetime.strptime(date, "%Y/%m/%d %H:%M")
+        #
+        #
+        # return ((not self.minDate.isValid() or date >= self.minDate)
+        #         and (not self.maxDate.isValid() or date <= self.maxDate))
+
+        try:
+            date = datetime.strptime(date, "%Y/%m/%d %H:%M")
+        except ValueError:
+            pass
 
         return ((not self.minDate.isValid() or date >= self.minDate)
                 and (not self.maxDate.isValid() or date <= self.maxDate))

@@ -15,17 +15,22 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="2" column="2">
-     <widget class="QPushButton" name="pushButton">
+       <item row="2" column="5">
+           <widget class="QLabel" name="label">
+               <property name="toolTip">
+                   <string>update me</string>
+               </property>
+               <property name="styleSheet">
+                   <string notr="true">border-color: rgb(179, 179, 179);
+                       border-top-color: rgb(252, 2, 128);
+                   </string>
+               </property>
       <property name="text">
-       <string>ADD</string>
+          <string>update with button</string>
       </property>
      </widget>
     </item>
-    <item row="0" column="3">
-     <widget class="QComboBox" name="comboBox_Aircraft"/>
-    </item>
-    <item row="2" column="3">
+       <item row="2" column="4">
      <widget class="QPushButton" name="pushButton_update">
       <property name="toolTip">
        <string>mettre à jour la colonne total</string>
@@ -41,21 +46,17 @@
     <item row="0" column="0">
      <widget class="QLineEdit" name="lineEdit_search"/>
     </item>
-    <item row="2" column="4">
-     <widget class="QLabel" name="label">
-      <property name="toolTip">
-       <string>update me</string>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">border-color: rgb(179, 179, 179);
-border-top-color: rgb(252, 2, 128);</string>
-      </property>
+       <item row="0" column="4">
+           <widget class="QComboBox" name="comboBox_Aircraft"/>
+       </item>
+       <item row="2" column="2">
+           <widget class="QPushButton" name="pushButton">
       <property name="text">
-       <string>update with button</string>
+          <string>ADD</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="0" colspan="5">
+       <item row="1" column="0" colspan="6">
      <widget class="QTableView" name="tableView"/>
     </item>
     <item row="0" column="1">
@@ -72,6 +73,13 @@ border-top-color: rgb(252, 2, 128);</string>
       </property>
      </widget>
     </item>
+       <item row="2" column="3">
+           <widget class="QPushButton" name="rmv_btn">
+               <property name="text">
+                   <string>REMOVE</string>
+               </property>
+           </widget>
+       </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
